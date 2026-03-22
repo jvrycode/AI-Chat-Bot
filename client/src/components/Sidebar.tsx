@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { conversationsAPI } from '../services/api';
+import logo from '../assets/logo.png';
 import './Sidebar.css';
 
 interface ConversationSummary {
@@ -146,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     return (
         <div className="sidebar">
             <div className="sidebar-branding">
-                <h1 className="sidebar-brand-text">XyloAI</h1>
+                <img src={logo} alt="Logo" className="sidebar-logo" />
             </div>
 
             <div className="sidebar-header">

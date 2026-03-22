@@ -28,7 +28,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({ onSendMessage, disabled = f
             <div className="input-container">
                 <textarea
                     className="message-input"
-                    placeholder="Message XyloAI..."
+                    placeholder="Message..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}

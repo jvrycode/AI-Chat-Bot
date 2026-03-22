@@ -1,4 +1,4 @@
-// API Service for XyloAI Chatbot
+// API Service for Chatbot
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Conversations API

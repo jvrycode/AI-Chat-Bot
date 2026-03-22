@@ -152,7 +152,7 @@ const App: React.FC = () => {
                 onSearch={handleSearch}
             />
             <div className="main-content">
-                <TopBar title="XyloAI" />
+                <TopBar title="Chatbot" />
                 <ChatContainer messages={messages} />
                 <ChatInputBar onSendMessage={handleSendMessage} disabled={!isConnected} />
             </div>

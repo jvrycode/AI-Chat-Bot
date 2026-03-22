@@ -5,7 +5,7 @@ interface TopBarProps {
     title?: string;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ title = 'XyloAI' }) => {
+const TopBar: React.FC<TopBarProps> = ({ title = 'Chatbot' }) => {
     return (
         <div className="topbar">
             <div className="topbar-content">
