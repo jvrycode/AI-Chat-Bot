@@ -11,19 +11,21 @@
 }
 
 .sidebar-branding {
-    padding: var(--spacing-md) var(--spacing-lg);
-    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-lg) var(--spacing-md) var(--spacing-sm) 28px;
+    margin-bottom: var(--spacing-xs);
+    display: flex;
+    align-items: center;
 }
 
 .sidebar-logo {
     max-width: 100%;
-    height: 48px;
+    height: 72px;
     object-fit: contain;
     display: block;
 }
 
 .sidebar-header {
-    padding: 0 var(--spacing-sm);
+    padding: 0 4px;
     margin-bottom: var(--spacing-md);
 }
 
