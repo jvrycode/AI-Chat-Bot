@@ -22,7 +22,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages }) => {
             <div className="messages-wrapper">
                 {messages.length === 0 ? (
                     <div className="empty-state">
-                        <h2>How can I help you today?</h2>
+                        <h2>What would you like to accomplish today?</h2>
                     </div>
                 ) : (
                     messages.map((message) => (
