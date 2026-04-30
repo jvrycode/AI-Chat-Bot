@@ -1,4 +1,4 @@
-# XyloAI Chatbot
+# AI Chatbot
 
 AI-powered chatbot with ChatGPT-style interface, real-time messaging, and conversation management.
 
@@ -35,8 +35,8 @@ AI-powered chatbot with ChatGPT-style interface, real-time messaging, and conver
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/X-ylo/XYLO-AI-CHAT-BOT.git
-cd XYLO-AI-CHAT-BOT
+git clone https://github.com/jvrycode/AI-CHAT-BOT.git
+cd AI-CHAT-BOT
 ```
 
 ### 2. Install dependencies
@@ -52,8 +52,7 @@ Create a `.env` file in the root directory:
 # Groq AI API Key
 GROQ_API_KEY=your_groq_api_key_here
 
-# MongoDB Atlas Connection String
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/xyloai?retryWrites=true&w=majority
+
 
 # Server Configuration
 PORT=5000
@@ -108,7 +107,7 @@ The app will be available at:
 ## Project Structure
 
 ```
-XyloAIChatBot/
+AIChatBot/
 ├── client/                  # React frontend
 │   ├── public/
 │   └── src/
@@ -253,7 +252,7 @@ MIT License - see LICENSE file for details
 
 ## Author
 
-**Xylo** - [GitHub](https://github.com/X-ylo)
+[GitHub](https://github.com/jvrycode)
 
 ## Acknowledgments
 
