@@ -17,19 +17,20 @@ const Project = require('./models/Project');
 
 const app = express();
 const server = http.createServer(app);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow any origin for Vercel preview/production URLs
+    callback(null, true);
+  },
+  credentials: true
+};
+
 const io = socketIo(server, {
-  cors: {
-    origin: ["http://localhost:3000", "http://localhost:5000"],
-    methods: ["GET", "POST"],
-    credentials: true
-  }
+  cors: corsOptions
 });
 
 // Middleware
-app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5000"],
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
