@@ -49,6 +49,7 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       file: fs.createReadStream(newPath),
       model: "whisper-large-v3",
       response_format: "json",
+      language: "en", // Force English to prevent Chinese hallucinations from noise
     });
 
     // Cleanup temp file

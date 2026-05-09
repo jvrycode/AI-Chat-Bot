@@ -17,6 +17,60 @@ interface ChatMessageProps {
     onEdit?: (messageId: string, newContent: string) => void;
 }
 
+const CodeBlock = ({ inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || '');
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(String(children).replace(/\n$/, ''));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return !inline && match ? (
+        <div className="code-block-wrapper">
+            <div className="code-block-header">
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="14" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    {match[1]}
+                </span>
+                <button className="code-copy-btn" onClick={handleCopy}>
+                    {copied ? (
+                        <>
+                            <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="14" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Copied!
+                        </>
+                    ) : (
+                        <>
+                            <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="14" width="14" xmlns="http://www.w3.org/2000/svg"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            Copy code
+                        </>
+                    )}
+                </button>
+            </div>
+            <SyntaxHighlighter
+                {...props}
+                children={String(children).replace(/\n$/, '')}
+                style={vscDarkPlus}
+                language={match[1]}
+                PreTag="div"
+                customStyle={{
+                    margin: 0,
+                    borderTopLeftRadius: 0,
+                    borderTopRightRadius: 0,
+                    borderBottomLeftRadius: '8px',
+                    borderBottomRightRadius: '8px',
+                    background: '#0d0d0d'
+                }}
+            />
+        </div>
+    ) : (
+        <code {...props} className={className}>
+            {children}
+        </code>
+    );
+};
+
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onEdit }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(message.content);
@@ -79,42 +133,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onEdit }) => {
                             {message.role === 'assistant' ? (
                                 <ReactMarkdown
                                     components={{
-                                        code({ node, inline, className, children, ...props }: any) {
-                                            const match = /language-(\w+)/.exec(className || '');
-                                            return !inline && match ? (
-                                                <div className="code-block-wrapper">
-                                                    <div className="code-block-header">
-                                                        <span>{match[1]}</span>
-                                                        <button 
-                                                            className="code-copy-btn"
-                                                            onClick={() => {
-                                                                navigator.clipboard.writeText(String(children).replace(/\n$/, ''));
-                                                            }}
-                                                        >
-                                                            Copy
-                                                        </button>
-                                                    </div>
-                                                    <SyntaxHighlighter
-                                                        {...props}
-                                                        children={String(children).replace(/\n$/, '')}
-                                                        style={vscDarkPlus}
-                                                        language={match[1]}
-                                                        PreTag="div"
-                                                        customStyle={{
-                                                            margin: 0,
-                                                            borderTopLeftRadius: 0,
-                                                            borderTopRightRadius: 0,
-                                                            borderBottomLeftRadius: '6px',
-                                                            borderBottomRightRadius: '6px',
-                                                        }}
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <code {...props} className={className}>
-                                                    {children}
-                                                </code>
-                                            );
-                                        }
+                                        code: CodeBlock
                                     }}
                                 >
                                     {message.content}

@@ -95,37 +95,36 @@
 /* Code Blocks */
 .code-block-wrapper {
     margin: var(--spacing-md) 0;
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
-    border: 1px solid var(--border-subtle);
-    background-color: #1e1e1e;
+    background-color: #0d0d0d;
 }
 
 .code-block-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
-    background-color: #2d2d2d;
+    padding: 8px 16px;
+    background-color: #2f2f2f;
     font-size: 12px;
-    color: var(--text-muted);
+    color: #b4b4b4;
     font-family: var(--font-family);
-    border-bottom: 1px solid var(--border-subtle);
 }
 
 .code-copy-btn {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: #b4b4b4;
     cursor: pointer;
     font-size: 12px;
     display: flex;
     align-items: center;
+    gap: 6px;
     transition: color var(--transition-fast);
 }
 
 .code-copy-btn:hover {
-    color: var(--text-primary);
+    color: #ececec;
 }
 
 .message-footer {
