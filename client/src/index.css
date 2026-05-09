@@ -1,6 +1,4 @@
 /* ChatGPT-Style Global Styles */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-
 * {
     margin: 0;
     padding: 0;
@@ -16,8 +14,9 @@
     --text-primary: #e7e7e7;
     --text-muted: #a1a1a1;
     --text-darker: #8e8e8e;
-    --accent: #19c37d;
-    --accent-hover: #1a9f6b;
+    --accent: #ffffff;
+    --accent-hover: #e0e0e0;
+    --bg-glass: rgba(18, 18, 18, 0.85);
 
     /* Spacing */
     --spacing-xs: 8px;
@@ -27,7 +26,7 @@
     --spacing-xl: 32px;
 
     /* Typography */
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', sans-serif;
+    --font-family: Söhne, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-size-sm: 13px;
     --font-size-base: 14px;
     --font-size-lg: 16px;
@@ -36,6 +35,19 @@
     --transition-fast: 0.15s ease-out;
     --transition-base: 0.2s ease-out;
     --transition-slow: 0.3s ease-out;
+}
+
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9f9f9;
+    --bg-hover: #ececec;
+    --border-subtle: #e5e5e5;
+    --text-primary: #0f0f0f;
+    --text-muted: #6b6b6b;
+    --text-darker: #3d3d3d;
+    --accent: #000000;
+    --accent-hover: #333333;
+    --bg-glass: rgba(255, 255, 255, 0.85);
 }
 
 body {
@@ -96,26 +108,28 @@ code {
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: transparent;
+    border-left: 1px solid rgba(255, 255, 255, 0.02);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border-subtle);
-    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 9999px; /* Pill shape */
+    border: 3px solid var(--bg-primary); /* Create padding effect */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #3a3a3a;
+    background: rgba(255, 255, 255, 0.25);
 }
 
 /* Selection */
 ::selection {
-    background-color: rgba(25, 195, 125, 0.2);
+    background-color: rgba(128, 128, 128, 0.3);
     color: var(--text-primary);
 }
 

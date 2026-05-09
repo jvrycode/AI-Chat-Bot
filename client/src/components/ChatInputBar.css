@@ -1,12 +1,10 @@
 .chat-input-bar {
-    position: fixed;
-    bottom: 0;
-    left: 260px;
-    right: 0;
-    padding: var(--spacing-lg);
-    background-color: var(--bg-primary);
-    border-top: 1px solid var(--border-subtle);
+    position: relative;
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+    background-color: var(--bg-primary); /* Blend with container */
     z-index: 10;
+    flex-shrink: 0;
 }
 
 .input-container {
@@ -15,8 +13,8 @@
     position: relative;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 26px;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -83,9 +81,91 @@
     stroke-width: 2.5;
 }
 
+/* Attachment and Mic buttons */
+.attachment-btn, .mic-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.attachment-btn:hover:not(:disabled), .mic-btn:hover:not(:disabled) {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mic-btn.recording {
+    color: #ef4444;
+    animation: pulse-recording 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-recording {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.attachment-btn:disabled, .mic-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Image preview container */
+.image-preview-container {
+    max-width: 800px;
+    margin: 0 auto var(--spacing-sm) auto;
+    position: relative;
+    display: inline-block;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background-color: var(--bg-secondary);
+}
+
+.image-preview {
+    max-height: 120px;
+    max-width: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.remove-image-btn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.remove-image-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .chat-input-bar {
-        left: 0;
+        padding: var(--spacing-sm);
     }
 }

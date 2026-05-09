@@ -15,11 +15,24 @@
 
 .message-content {
     max-width: 80%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* User gets the bubble style */
+.chat-message.user .message-content {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    padding: var(--spacing-md) var(--spacing-lg);
-    position: relative;
+    border-radius: 20px;
+    padding: 12px 20px;
+}
+
+/* Assistant gets transparent background */
+.chat-message.assistant .message-content {
+    background-color: transparent;
+    border: none;
+    padding: 0;
 }
 
 .message-text {
@@ -30,11 +43,241 @@
     white-space: pre-wrap;
 }
 
-.message-timestamp {
+.message-image-container {
     margin-top: var(--spacing-sm);
+    max-width: 100%;
+}
+
+.message-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    object-fit: contain;
+    background-color: var(--bg-primary);
+}
+
+/* Markdown styling for Assistant messages */
+.markdown-body {
+    white-space: normal; /* Override pre-wrap for markdown so paragraphs wrap normally */
+}
+
+.markdown-body p {
+    margin-bottom: var(--spacing-sm);
+}
+
+.markdown-body p:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-body strong {
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.markdown-body ul, .markdown-body ol {
+    margin-bottom: var(--spacing-sm);
+    padding-left: var(--spacing-lg);
+}
+
+.markdown-body li {
+    margin-bottom: 4px;
+}
+
+/* Inline Code */
+.markdown-body code:not([class*="language-"]) {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+/* Code Blocks */
+.code-block-wrapper {
+    margin: var(--spacing-md) 0;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background-color: #1e1e1e;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #2d2d2d;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-family);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.code-copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    transition: color var(--transition-fast);
+}
+
+.code-copy-btn:hover {
+    color: var(--text-primary);
+}
+
+.message-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: var(--spacing-sm);
+    gap: var(--spacing-xs);
+}
+
+.message-timestamp {
     font-size: var(--font-size-sm);
     color: var(--text-muted);
-    text-align: right;
+}
+
+/* Assistant timestamp needs to be aligned left if no bubble, but we'll align to end to match standard */
+.chat-message.assistant .message-footer {
+    justify-content: flex-start;
+}
+
+.message-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+/* Typing Indicator Animation */
+.typing-indicator-container {
+    background-color: transparent !important;
+    padding: 12px 0 !important;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.typing-indicator span {
+    display: block;
+    width: 6px;
+    height: 6px;
+    background-color: var(--text-muted);
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes typing {
+    0%, 80%, 100% { 
+        transform: scale(0);
+        opacity: 0.5;
+    } 
+    40% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.chat-message:hover .message-actions {
+    opacity: 1;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.icon-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+/* Edit Form */
+.edit-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 300px;
+}
+
+.edit-textarea {
+    width: 100%;
+    min-height: 80px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: var(--spacing-sm);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    margin-bottom: var(--spacing-sm);
+}
+
+.edit-textarea:focus {
+    border-color: #3a3a3a;
+}
+
+.edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+}
+
+.edit-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font-family);
+    transition: all var(--transition-fast);
+    border: none;
+}
+
+.edit-btn.save {
+    background-color: #e7e7e7;
+    color: #121212;
+}
+
+.edit-btn.save:hover {
+    background-color: #ffffff;
+}
+
+.edit-btn.cancel {
+    background-color: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+}
+
+.edit-btn.cancel:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
 }
 
 /* Responsive adjustments */

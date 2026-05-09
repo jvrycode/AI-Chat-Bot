@@ -4,9 +4,11 @@ import './ChatContainer.css';
 
 interface ChatContainerProps {
     messages: Message[];
+    onEditMessage?: (messageId: string, newContent: string) => void;
+    isAITyping?: boolean;
 }
 
-const ChatContainer: React.FC<ChatContainerProps> = ({ messages }) => {
+const ChatContainer: React.FC<ChatContainerProps> = ({ messages, onEditMessage, isAITyping = false }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -26,8 +28,19 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages }) => {
                     </div>
                 ) : (
                     messages.map((message) => (
-                        <ChatMessage key={message.id} message={message} />
+                        <ChatMessage key={message.id} message={message} onEdit={onEditMessage} />
                     ))
+                )}
+                {isAITyping && (
+                    <div className="chat-message assistant fade-in-slide-up">
+                        <div className="message-content typing-indicator-container">
+                            <div className="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
                 )}
                 <div ref={messagesEndRef} />
             </div>

@@ -12,6 +12,29 @@
     flex-direction: column;
     overflow: hidden;
     position: relative;
+    transition: margin-left var(--transition-base);
+}
+
+.open-sidebar-btn {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+    z-index: 50;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.open-sidebar-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
 }
 
 /* Mobile responsiveness */

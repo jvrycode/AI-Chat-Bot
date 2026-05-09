@@ -5,6 +5,11 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Startup diagnostics
+console.log('🔍 MONGODB_URI loaded:', process.env.MONGODB_URI ? '✅ Yes' : '❌ Missing');
+console.log('🔍 URI protocol:', process.env.MONGODB_URI?.substring(0, 20) + '...');
+console.log('🔍 JWT_SECRET loaded:', process.env.JWT_SECRET ? '✅ Yes' : '❌ Missing');
+
 // Database
 const connectDB = require('./config/database');
 const Conversation = require('./models/Conversation');
@@ -25,16 +30,19 @@ app.use(cors({
   origin: ["http://localhost:3000", "http://localhost:5000"],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Import routes
 const chatRoutes = require('./routes/chat');
 const conversationsRoutes = require('./routes/conversations');
 const projectsRoutes = require('./routes/projects');
+const authRoutes = require('./routes/auth');
 
 app.use('/api/chat', chatRoutes);
 app.use('/api/conversations', conversationsRoutes);
 app.use('/api/projects', projectsRoutes);
+app.use('/api/auth', authRoutes);
 
 // Store active conversations
 const conversations = new Map();
@@ -60,7 +68,7 @@ io.on('connection', (socket) => {
   // Handle new messages
   socket.on('new-message', async (data) => {
     try {
-      const { conversationId, message, userId } = data;
+      const { conversationId, message, image, userId, isGuest } = data;
 
       // Store user message
       if (!conversations.has(conversationId)) {
@@ -73,6 +81,7 @@ io.on('connection', (socket) => {
         id: userMessageId,
         type: 'user',
         content: message,
+        image: image || null,
         timestamp: new Date().toISOString()
       };
 
@@ -98,39 +107,160 @@ io.on('connection', (socket) => {
       // Emit AI response to all clients in the room
       io.to(conversationId).emit('message-received', aiMessage);
 
-      // Save to MongoDB if connected
-      try {
-        let dbConversation = await Conversation.findOne({ conversationId });
+      // Save to MongoDB if connected and not a guest
+      if (!isGuest) {
+        try {
+          let dbConversation = await Conversation.findOne({ conversationId });
 
-        if (!dbConversation) {
-          dbConversation = new Conversation({
-            conversationId,
-            messages: []
+          if (!dbConversation) {
+            dbConversation = new Conversation({
+              conversationId,
+              messages: []
+            });
+          }
+
+          // Add both messages
+          dbConversation.messages.push({
+            role: 'user',
+            content: message,
+            image: image || null,
+            timestamp: new Date(userMessage.timestamp)
           });
+
+          dbConversation.messages.push({
+            role: 'assistant',
+            content: aiResponse,
+            timestamp: new Date(aiMessage.timestamp)
+          });
+
+          await dbConversation.save();
+          console.log(`✅ Saved conversation ${conversationId} to database`);
+        } catch (dbError) {
+          console.error('❌ MongoDB save error:', dbError.message);
         }
-
-        // Add both messages
-        dbConversation.messages.push({
-          role: 'user',
-          content: message,
-          timestamp: new Date(userMessage.timestamp)
-        });
-
-        dbConversation.messages.push({
-          role: 'assistant',
-          content: aiResponse,
-          timestamp: new Date(aiMessage.timestamp)
-        });
-
-        await dbConversation.save();
-        console.log(`✅ Saved conversation ${conversationId} to database`);
-      } catch (dbError) {
-        console.error('❌ MongoDB save error:', dbError.message);
+      } else {
+        console.log(`ℹ️ Skipped saving conversation ${conversationId} to database (Guest user)`);
       }
 
     } catch (error) {
       console.error('Error handling message:', error);
       socket.emit('error', { message: 'Failed to process message' });
+    }
+  });
+
+  // Handle edit message
+  socket.on('edit-message', async (data) => {
+    try {
+      const { conversationId, messageId, newContent, isGuest } = data;
+
+      // Ensure conversation exists in memory
+      if (!conversations.has(conversationId)) {
+        // Try loading from DB if not in memory
+        const dbConv = await Conversation.findOne({ conversationId });
+        if (dbConv) {
+          const formattedMessages = dbConv.messages.map((m, index) => ({
+            id: `${conversationId}-${index}`,
+            type: m.role === 'user' ? 'user' : 'ai',
+            content: m.content,
+            timestamp: m.timestamp.toISOString()
+          }));
+          conversations.set(conversationId, formattedMessages);
+        } else {
+           return socket.emit('error', { message: 'Conversation not found' });
+        }
+      }
+
+      const conversation = conversations.get(conversationId);
+      
+      // Find the index of the edited message
+      // Note: messageId might be the ID string from client, which we constructed as `${conversationId}-${index}`
+      // OR it could be the numeric timestamp ID. We should try to find it.
+      let editedIndex = -1;
+      
+      // Check if messageId is an index format
+      if (typeof messageId === 'string' && messageId.includes('-')) {
+        const parts = messageId.split('-');
+        const idx = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(idx) && idx >= 0 && idx < conversation.length) {
+            editedIndex = idx;
+        }
+      }
+      
+      // Fallback: search by content matching if it's the exact same message but we lost the ID mapping
+      // Or just assume it's finding the first user message that matches
+      if (editedIndex === -1) {
+          // This fallback is risky if messages are identical, but we'll try to find by string ID match
+          editedIndex = conversation.findIndex(m => String(m.id) === String(messageId));
+      }
+
+      if (editedIndex === -1) {
+        return socket.emit('error', { message: 'Message to edit not found' });
+      }
+
+      // 1. Update the message content
+      conversation[editedIndex].content = newContent;
+
+      // 2. Truncate the history AFTER the edited message
+      conversation.splice(editedIndex + 1);
+
+      // Emit an intermediate update to show the user's edit immediately
+      io.to(conversationId).emit('conversation-updated', conversation.map(m => ({
+          role: m.type,
+          content: m.content,
+          timestamp: m.timestamp
+      })));
+
+      // 3. Generate new AI response based on truncated history
+      // (The last message is now the edited user message)
+      // The generateAIResponse expects the history EXCEPT the current message
+      const historyForAI = conversation.slice(0, -1);
+      const aiResponse = await generateAIResponse(newContent, historyForAI);
+
+      // 4. Append the new AI response
+      const aiMessageId = Date.now() + 1;
+      const aiMessage = {
+        id: aiMessageId,
+        type: 'ai',
+        content: aiResponse,
+        timestamp: new Date().toISOString()
+      };
+      
+      conversation.push(aiMessage);
+
+      // 5. Update MongoDB
+      if (!isGuest) {
+        try {
+          let dbConversation = await Conversation.findOne({ conversationId });
+          
+          if (dbConversation) {
+            // Truncate DB messages to match our updated memory array
+            // Since we reconstructed the conversation, we can just replace the whole array
+            dbConversation.messages = conversation.map(m => ({
+              role: m.type === 'ai' ? 'assistant' : 'user',
+              content: m.content,
+              timestamp: new Date(m.timestamp)
+            }));
+            
+            await dbConversation.save();
+            console.log(`✅ Saved edited conversation ${conversationId} to database`);
+          }
+        } catch (dbError) {
+          console.error('❌ MongoDB save error during edit:', dbError.message);
+        }
+      } else {
+        console.log(`ℹ️ Skipped saving edited conversation ${conversationId} to database (Guest user)`);
+      }
+
+      // 6. Emit the final updated conversation to the client
+      io.to(conversationId).emit('conversation-updated', conversation.map(m => ({
+          role: m.type,
+          content: m.content,
+          timestamp: m.timestamp
+      })));
+
+    } catch (error) {
+      console.error('Error editing message:', error);
+      socket.emit('error', { message: 'Failed to edit message' });
     }
   });
 
@@ -157,12 +287,14 @@ async function generateAIResponse(message, conversationHistory) {
     const messages = [
       {
         role: "system",
-        content: "You are XyloAI, an advanced AI assistant with a helpful, knowledgeable, and friendly personality. Provide clear, accurate, and engaging responses. Keep responses concise but informative. Be conversational and helpful."
+        content: "You are Xenova, an advanced AI assistant with a helpful, knowledgeable, and friendly personality. Provide clear, accurate, and engaging responses. Keep responses concise but informative. Be conversational and helpful."
       }
     ];
 
-    // Add conversation history (last 10 messages for context)
-    const recentHistory = conversationHistory.slice(-10);
+    // Add conversation history (last 10 messages, excluding current)
+    const historyWithoutCurrent = conversationHistory.slice(0, -1);
+    const recentHistory = historyWithoutCurrent.slice(-10);
+    
     recentHistory.forEach(msg => {
       messages.push({
         role: msg.type === 'user' ? 'user' : 'assistant',
@@ -170,15 +302,28 @@ async function generateAIResponse(message, conversationHistory) {
       });
     });
 
-    // Add current message
-    messages.push({
-      role: "user",
-      content: message
-    });
+    let hasImage = false;
+    const currentMsg = conversationHistory[conversationHistory.length - 1];
+    
+    if (currentMsg && currentMsg.image) {
+      hasImage = true;
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: message },
+          { type: "image_url", image_url: { url: currentMsg.image } }
+        ]
+      });
+    } else {
+      messages.push({
+        role: "user",
+        content: message
+      });
+    }
 
     const completion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama-3.1-8b-instant", // Current fast and free model
+      model: hasImage ? "llama-3.2-11b-vision-preview" : "llama-3.1-8b-instant",
       temperature: 0.7,
       max_tokens: 500,
     });
@@ -195,10 +340,16 @@ async function generateAIResponse(message, conversationHistory) {
 // Mock AI responses for testing
 function getMockResponse(message, conversationHistory = []) {
   const lowerMessage = message.toLowerCase();
+  
+  // Check if the last message in history has an image
+  const lastMsg = conversationHistory.length > 0 ? conversationHistory[conversationHistory.length - 1] : null;
+  if (lastMsg && lastMsg.image) {
+      return "I received your image! However, the Groq API key configured for this server currently does not have access to the Vision models (they may be disabled or restricted on this tier). Therefore, I can't analyze the image right now. But I'm still here to chat!";
+  }
 
-  // Greeting responses
-  if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-    return "Hello! I'm XyloAI, your AI assistant. How can I help you today?";
+  // Greeting responses (use word boundaries to avoid matching substrings like "Philippines")
+  if (/\b(hello|hi|hey)\b/.test(lowerMessage)) {
+    return "Hello! I'm Xenova, your AI assistant. How can I help you today?";
   }
 
   // Help requests

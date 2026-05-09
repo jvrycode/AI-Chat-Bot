@@ -1,5 +1,5 @@
 {
-  "name": "xylo-ai-chatbot",
+  "name": "xenova-chatbot",
   "version": "1.0.0",
   "description": "Advanced AI Chatbot with Modern Minimalist Design",
   "main": "server/index.js",
@@ -12,11 +12,15 @@
     "install-all": "npm install && cd client && npm install"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "groq-sdk": "^0.7.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.2.0",
     "mongoose": "^9.0.1",
+    "multer": "^2.1.1",
     "socket.io": "^4.7.4",
     "uuid": "^9.0.1"
   },
@@ -31,6 +35,6 @@
     "express",
     "minimalist"
   ],
-  "author": "XyloAI",
+  "author": "Xenova",
   "license": "MIT"
 }

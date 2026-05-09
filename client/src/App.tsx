@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import ChatContainer from './components/ChatContainer';
 import ChatInputBar from './components/ChatInputBar';
+import Auth from './components/Auth';
 import { Message } from './components/ChatMessage';
 import { conversationsAPI, projectsAPI } from './services/api';
 import './App.css';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 interface ConversationSummary {
     conversationId: string;
@@ -19,19 +23,25 @@ interface Project {
     name: string;
 }
 
-const App: React.FC = () => {
+const ChatApp: React.FC = () => {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [messages, setMessages] = useState<Message[]>([]);
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [conversationId, setConversationId] = useState<string>('default-conversation');
     const [conversations, setConversations] = useState<ConversationSummary[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
+    const [isAITyping, setIsAITyping] = useState(false);
+
+    const isAuthenticated = !!localStorage.getItem('token');
 
     // Fetch conversations and projects on mount
     useEffect(() => {
-        loadConversations();
-        loadProjects();
-    }, []);
+        if (isAuthenticated) {
+            loadConversations();
+            loadProjects();
+        }
+    }, [isAuthenticated]);
 
     const loadConversations = async () => {
         const data = await conversationsAPI.getAll();
@@ -45,7 +55,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         // Connect to WebSocket server
-        const newSocket = io('http://localhost:5000');
+        const newSocket = io(API_URL);
 
         newSocket.on('connect', () => {
             console.log('Connected to server');
@@ -60,14 +70,38 @@ const App: React.FC = () => {
         });
 
         // Listen for messages from server
-        newSocket.on('message-received', (data: { id: number; type: string; content: string; timestamp: string }) => {
+        newSocket.on('message-received', (data: { id: number; type: string; content: string; image?: string; timestamp: string }) => {
             const newMessage: Message = {
                 id: data.id.toString(),
                 role: data.type === 'user' ? 'user' : 'assistant',
                 content: data.content,
+                image: data.image,
                 timestamp: new Date(data.timestamp)
             };
             setMessages(prev => [...prev, newMessage]);
+
+            // Refresh sidebar after AI responds (conversation is saved to DB by then)
+            if (data.type === 'ai') {
+                setIsAITyping(false);
+                setTimeout(() => loadConversations(), 500);
+            }
+        });
+
+        newSocket.on('error', (err) => {
+            console.error('Socket error:', err);
+            setIsAITyping(false);
+        });
+
+        // Listen for conversation updates (e.g., after an edit that truncates history)
+        newSocket.on('conversation-updated', (updatedMessages: any[]) => {
+            const loadedMessages: Message[] = updatedMessages.map((msg: any, index: number) => ({
+                id: `${conversationId}-${index}`,
+                role: msg.role === 'user' ? 'user' : 'assistant',
+                content: msg.content,
+                timestamp: new Date(msg.timestamp)
+            }));
+            setMessages(loadedMessages);
+            setTimeout(() => loadConversations(), 500);
         });
 
         setSocket(newSocket);
@@ -77,13 +111,28 @@ const App: React.FC = () => {
         };
     }, [conversationId]);
 
-    const handleSendMessage = (content: string) => {
+    const handleSendMessage = (content: string, image?: string) => {
         if (socket && isConnected) {
+            setIsAITyping(true);
             // Send message to server
             socket.emit('new-message', {
                 conversationId: conversationId,
                 message: content,
-                userId: socket.id
+                image: image || null,
+                userId: socket.id,
+                isGuest: !isAuthenticated
+            });
+        }
+    };
+
+    const handleEditMessage = (messageId: string, newContent: string) => {
+        if (socket && isConnected) {
+            setIsAITyping(true);
+            socket.emit('edit-message', {
+                conversationId,
+                messageId,
+                newContent,
+                isGuest: !isAuthenticated
             });
         }
     };
@@ -100,7 +149,9 @@ const App: React.FC = () => {
         }
 
         // Reload conversations list
-        setTimeout(() => loadConversations(), 1000);
+        if (isAuthenticated) {
+            setTimeout(() => loadConversations(), 1000);
+        }
     };
 
     const handleLoadConversation = async (id: string) => {
@@ -144,19 +195,50 @@ const App: React.FC = () => {
     return (
         <div className="app">
             <Sidebar
+                isOpen={isSidebarOpen}
+                isAuthenticated={isAuthenticated}
                 onNewChat={handleNewChat}
-                conversations={conversations}
-                projects={projects}
-                onLoadConversation={handleLoadConversation}
-                onCreateProject={handleCreateProject}
-                onSearch={handleSearch}
-            />
-            <div className="main-content">
-                <TopBar title="Chatbot" />
-                <ChatContainer messages={messages} />
-                <ChatInputBar onSendMessage={handleSendMessage} disabled={!isConnected} />
+                    conversations={conversations}
+                    projects={projects}
+                    onLoadConversation={handleLoadConversation}
+                    onCreateProject={handleCreateProject}
+                    onSearch={handleSearch}
+                    activeConversationId={conversationId}
+                    onToggleSidebar={() => setIsSidebarOpen(false)}
+                    onLogout={() => {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }}
+                />
+            <div className={`main-content ${!isSidebarOpen ? 'sidebar-closed' : ''}`}>
+                {!isSidebarOpen && (
+                    <button className="open-sidebar-btn" onClick={() => setIsSidebarOpen(true)} title="Open sidebar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="5" ry="5" />
+                            <line x1="9" y1="3" x2="9" y2="21" />
+                        </svg>
+                    </button>
+                )}
+                <TopBar title="Chatbot" isAuthenticated={isAuthenticated} />
+                <ChatContainer messages={messages} onEditMessage={handleEditMessage} isAITyping={isAITyping} />
+                <ChatInputBar onSendMessage={handleSendMessage} disabled={!isConnected || isAITyping} isSidebarClosed={!isSidebarOpen} />
             </div>
         </div>
+    );
+};
+
+const App: React.FC = () => {
+    return (
+        <Router>
+            <Routes>
+                <Route path="/login" element={<Auth />} />
+                <Route 
+                    path="/" 
+                    element={<ChatApp />} 
+                />
+            </Routes>
+        </Router>
     );
 };
 
